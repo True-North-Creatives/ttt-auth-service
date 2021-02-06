@@ -1,12 +1,20 @@
-// userPresent.
-
 import httpStatus from 'http-status';
 import logger from 'ttt-packages/lib/config/logger';
-import { generateTokens,updateRefreshToken, isValidToken, deleteRefreshToken, generateAccessTokens, generateVerificationTokens } from './services/token.service';
 import { EMAIL } from 'ttt-packages/lib/constants/email.constants';
 import { constructResetUrl } from 'ttt-packages/lib/utils/helpers';
-import { getUserByFilter } from './services/user.service';
-import errorCode from 'ttt-packages/lib/constants/errorMap';
+import errorCode, { customError } from 'ttt-packages/lib/constants/errorMap';
+import { sendPasswordResetMail, sendConfirmationMail } from 'ttt-packages/lib/api/mail.api';
+import {
+  getUserByFilter, isSubscriptionActive, setResetURL, verifyResetURL, updatePass, userPresent,
+} from './services/user.service';
+import {
+  generateTokens,
+  updateRefreshToken,
+  isValidToken,
+  deleteRefreshToken,
+  generateAccessTokens,
+  generateVerificationTokens,
+} from './services/token.service';
 
 export const relogin = (res, message = 'Login Expired, Please login') => {
   res.clearCookie('rt');
@@ -38,12 +46,12 @@ export const logout = async (req, res) => {
 };
 
 export const authenticate = async (req, res) => {
-    if(!req.body.uid) {
-        return res.status(httpStatus.BAD_REQUEST).send({
-            
-        })
-    }
-  const user = await getUserByFilter({uid: req.body.uid});
+  if (!req.body.uid) {
+    return res.status(httpStatus.BAD_REQUEST).send({
+
+    });
+  }
+  const user = await getUserByFilter({ uid: req.body.uid });
   if (!user) {
     // user not found
     return res.status(httpStatus.NOT_FOUND).send({
@@ -53,7 +61,7 @@ export const authenticate = async (req, res) => {
   }
 
   // check if payment is done
-  if (!userService.isSubscriptionActive(user)) {
+  if (!isSubscriptionActive(user)) {
     return res.status(httpStatus.OK).send(errorCode[104]);
   }
 
@@ -79,7 +87,7 @@ export const authenticate = async (req, res) => {
   } else {
     if (accessPayload) {
       // valid access token
-      const result = userController.getUser(accessPayload.uid);
+      const result = getUserByFilter({ uid: accessPayload.uid });
       if (!result) return relogin(res, 'Unknow token, needs authentication');
       return res.status(httpStatus.OK).send({ status: true });
     }
@@ -99,7 +107,7 @@ export const authenticate = async (req, res) => {
 };
 
 export const reset = async (req, res) => {
-  const user = await userController.getUser(req.body);
+  const user = await getUserByFilter({ uid: req.body.uid });
   if (!user) {
     return res
       .status(httpStatus.NOT_FOUND)
@@ -113,30 +121,27 @@ export const reset = async (req, res) => {
   const token = generateVerificationTokens({
     email: user.email,
   });
-  await userService.setResetURL(user.email, token);
-  const payload = {
-    redirecturl: constructResetUrl(token),
-    name: user.name ? user.name : '',
-  };
-  const result = sendMail(payload, RESET.name, user.email);
-  return res.status(httpStatus.OK).send(result);
+  // update the DB with the token
+  await setResetURL(user.email, token);
+  const { status, data } = sendPasswordResetMail(user.email, user.name, constructResetUrl(token));
+  return res.status(status).send(data);
 };
 
 export const verify = async (req, res) => {
   const token = req.params.id;
   const { email = {} } = isValidToken(token);
-  const result = await userService.verifyResetURL(email, token);
+  const result = await verifyResetURL(email, token);
   return res.status(httpStatus.OK).send({ result, email });
 };
 
 export const resetPass = async (req, res) => {
   const { token, pass } = req.body;
   const { email } = isValidToken(token);
-  const result = await userService.verifyResetURL(email, token);
+  const result = await verifyResetURL(email, token);
   const updated = result
-        && (await userService.updatePass(email, pass)) !== (null || undefined);
+        && (await updatePass(email, pass)) !== (null || undefined);
   if (updated) {
-    userService.setResetURL(email, undefined);
+    setResetURL(email, undefined);
   }
   return res.status(httpStatus.OK).send({ email, updated });
 };
@@ -148,7 +153,7 @@ export const verifyPass = async (req, res, next) => {
       ...errorCode[103],
     });
   }
-  const user = await userService.getUserByFilter({ email });
+  const user = await getUserByFilter({ email });
   if (!user) {
     return res.status(httpStatus.OK).send({
       message: `${email} not found, please signup`,
@@ -168,4 +173,35 @@ export const verifyPass = async (req, res, next) => {
     message: 'email or password mismatch',
     error: errorCode[102],
   });
+};
+
+export const isUserPresent = async (req, res) => {
+  if (!req.body.email) {
+    const payload = customError('email is not present')['CUS-100'];
+    return res.status(httpStatus.BAD_REQUEST).send(payload);
+  }
+  const user = userPresent(req.body.email);
+  return res.status(httpStatus.OK).send(!!user);
+};
+
+export const createUser = async (req, res) => {
+  const payload = req.body;
+  if (payload.providerId === 'EMAIL') {
+    const token = generateVerificationTokens({
+      email: payload.email,
+    });
+    payload.resetURL = token;
+  }
+
+  const user = await createUser(payload);
+  if (payload.providerId !== 'EMAIL') {
+    return res.status(httpStatus.CREATED).send(payload);
+  }
+
+  logger.info('New User Signup', user.email);
+  const { status, data } = await sendConfirmationMail(payload.email, payload.resetURL);
+  if (status !== httpStatus.OK) {
+    logger.warn(`Failed to intitate the confiramtion mail, for user: ${payload.email}, stacktrace: ${data}`);
+  }
+  return res.status(httpStatus.CREATED).send(payload);
 };

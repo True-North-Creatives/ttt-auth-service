@@ -1,24 +1,25 @@
 import express from 'express';
 
 import { route } from 'ttt-packages/lib/constants/roles';
-import authenticator from '../../../controllers/auth/token.controller';
-// import {userPresent} from 'ttt-packages/lib/services/user.service';
-import authorize from '../../../middlewares/auth';
+import authorize from 'ttt-packages/lib/middleware/auth';
+import {
+  verifyPass, authenticate, logout, reset, verify, resetPass, isUserPresent, createUser,
+} from './auth.controller';
 
 const router = express.Router();
 
-router.post('/signin', authenticator.verifyPass, authenticator.authenticate);
-router.post('/logout', authenticator.logout);
+router.post('/signin', verifyPass, authenticate);
+router.post('/logout', logout);
 
 router.get(
   '/user_exists',
   authorize(route.USER_EXISTS),
-  userPresent,
+  isUserPresent,
 );
 
-router.post('/signup', userService.createUser);
-router.post('/reset', authenticator.reset);
-router.get('/reset/:id', authenticator.verify);
-router.post('/update', authenticator.resetPass);
+router.post('/signup', createUser);
+router.post('/reset', reset);
+router.get('/reset/:id', verify);
+router.post('/update', resetPass);
 
 export default router;

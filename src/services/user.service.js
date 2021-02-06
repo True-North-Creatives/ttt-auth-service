@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { ROLES } from 'ttt-packages/lib/constants/roles';
 import errorMap from 'ttt-packages/lib/constants/errorMap';
 import { generateUserId } from 'ttt-packages/lib/utils/helpers';
-import User from '../models/user.model';
+import User from 'ttt-packages/lib/models/user.model';
 
 /**
  * Create a user

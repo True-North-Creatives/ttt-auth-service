@@ -35,6 +35,11 @@ app.get('/api/mailer', (req, res) => {
   res.status(httpStatus.OK).send('healthy');
 });
 
+app.get('/api/mailer/config', (req, res) => {
+  logger.debug('Invoked config');
+  res.status(httpStatus.OK).send(JSON.parse(JSON.stringify(process.env)));
+});
+
 app.listen(process.env.PORT, () => {
   logger.info(`Mail server started at port: ${process.env.PORT}`);
 });
