@@ -20,6 +20,6 @@ router.get(
 router.post('/signup', createUser);
 router.post('/reset', reset);
 router.get('/reset/:id', verify);
-router.post('/update', resetPass);
+router.patch('/update', resetPass);
 
 export default router;

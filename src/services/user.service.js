@@ -11,14 +11,18 @@ import User from 'ttt-packages/lib/models/user.model';
  * @return {User}
  */
 export const createUser = async (payload) => {
-  if (await User.isEmailTaken(payload.email)) {
-    return { error: { ...errorMap['AUTH-107'] } };
+  if (await isEmailTaken(payload.email)) {
+    return { error: { ...errorMap['AUTH-107'] }, status: httpStatus.BAD_REQUEST };
   }
   const userID = generateUserId();
   const user = await User.create({ ...payload, uid: userID });
-  return user;
+  return {data: user, status: httpStatus.CREATED};
 };
 
+export const isEmailTaken = async (email) => {
+  const user = await User.findOne({email});
+  return !!user;
+}
 /**
  * Query for users
  * @param {object} filter - Mongo filter
@@ -59,9 +63,9 @@ export const updateUser = async (email, payload) => {
  * @param {*} uid
  * @param {*} pass
  */
-export const updatePass = async (uid, pass) => {
+export const updatePass = async (email, pass) => {
   const res = await User.updateOne(
-    { uid },
+    { email },
     { pass: await bcrypt.hash(pass, 8) },
   );
   return res;

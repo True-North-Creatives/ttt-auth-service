@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import { jwt as jwtConfig } from 'ttt-packages/lib/config/config';
 import { updateUser } from './user.service';
 
 /**
@@ -39,7 +38,7 @@ export const deleteRefreshToken = async (user, token) => {
 export const generateAccessTokens = (res, data) => {
   const accessToken = jwt.sign(
     { uid: data.email, role: data.role },
-    jwtConfig.secret,
+    process.env.secret,
     {
       expiresIn: '60m',
     },
@@ -53,9 +52,11 @@ export const generateAccessTokens = (res, data) => {
  * @param {object} data
  * @return {object} jwt token
  */
-export const generateVerificationTokens = (data) => jwt.sign({ ...data }, jwtConfig.secret, {
+export const generateVerificationTokens = (data) => {
+  console.log('secret', process.env.secret, );
+  return jwt.sign({ ...data }, process.env.secret, {
   expiresIn: '60m',
-});
+});}
 
 /**
  *
@@ -66,7 +67,7 @@ export const generateVerificationTokens = (data) => jwt.sign({ ...data }, jwtCon
 const generateRefreshTokens = (res, data) => {
   const refreshToken = jwt.sign(
     { uid: data.email, role: data.role },
-    jwtConfig.secret,
+    process.env.secret,
     {
       expiresIn: '14 days',
     },
@@ -97,7 +98,7 @@ export const generateTokens = (res, data) => {
  */
 export const isValidToken = (token = '') => {
   try {
-    return jwt.verify(token, jwtConfig.secret);
+    return jwt.verify(token, process.env.secret);
   } catch (e) {
     return null;
   }

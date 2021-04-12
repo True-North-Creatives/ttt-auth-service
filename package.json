@@ -6,12 +6,14 @@
   "scripts": {
     "build": "npm run clean && npm run transpile",
     "dev": "NODE_ENV=dev nodemon --exec babel-node src/index.js",
+    "start": "NODE_ENV=dev babel-node src/index.js",
     "transpile": "babel src -d lib",
     "clean": "rimraf lib",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "start": "NODE_ENV=staging node lib/index.js",
-    "start:prod": "NODE_ENV=prod node lib/index.js"
+    "start:stage": "NODE_ENV=staging node lib/index.js",
+    "start:prod": "NODE_ENV=prod node lib/index.js",
+    "restart": "pm2 restart auth"
   },
   "repository": {
     "type": "git",
@@ -41,12 +43,12 @@
   "dependencies": {
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "custom-env": "^2.0.1",
     "express": "^4.17.1",
     "http-status": "^1.5.0",
     "jsonwebtoken": "^8.5.1",
-    "nodemailer": "^6.4.17",
-    "ttt-packages": "0.0.13"
+    "ttt-packages": "0.0.14"
   }
 }
