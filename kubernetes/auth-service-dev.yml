@@ -1,233 +1,43 @@
-apiVersion: apps/v1
-kind: Deployment
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
 metadata:
-  annotations:
-    autopilot.gke.io/resource-adjustment: >-
-      {"input":{"containers":[{}]},"output":{"containers":[{"limits":{"cpu":"500m","ephemeral-storage":"1Gi","memory":"2Gi"},"requests":{"cpu":"500m","ephemeral-storage":"1Gi","memory":"2Gi"}}]},"modified":true}
+  name: "auth-service"
+  namespace: "default"
   labels:
-    app: auth-service
-  managedFields:
-    - apiVersion: apps/v1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:labels':
-            .: {}
-            'f:app': {}
-        'f:spec':
-          'f:progressDeadlineSeconds': {}
-          'f:replicas': {}
-          'f:revisionHistoryLimit': {}
-          'f:selector':
-            'f:matchLabels':
-              .: {}
-              'f:app': {}
-          'f:strategy':
-            'f:rollingUpdate':
-              .: {}
-              'f:maxSurge': {}
-              'f:maxUnavailable': {}
-            'f:type': {}
-          'f:template':
-            'f:metadata':
-              'f:labels':
-                .: {}
-                'f:app': {}
-            'f:spec':
-              'f:containers':
-                'k:{"name":"ttt-auth-service-sha256-1"}':
-                  .: {}
-                  'f:image': {}
-                  'f:imagePullPolicy': {}
-                  'f:name': {}
-                  'f:resources': {}
-                  'f:terminationMessagePath': {}
-                  'f:terminationMessagePolicy': {}
-              'f:dnsPolicy': {}
-              'f:restartPolicy': {}
-              'f:schedulerName': {}
-              'f:securityContext': {}
-              'f:terminationGracePeriodSeconds': {}
-      manager: GoogleCloudConsole
-      operation: Update
-      time: '2021-04-13T22:11:18Z'
-    - apiVersion: apps/v1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            'f:deployment.kubernetes.io/revision': {}
-        'f:status':
-          'f:availableReplicas': {}
-          'f:conditions':
-            .: {}
-            'k:{"type":"Available"}':
-              .: {}
-              'f:lastTransitionTime': {}
-              'f:lastUpdateTime': {}
-              'f:message': {}
-              'f:reason': {}
-              'f:status': {}
-              'f:type': {}
-            'k:{"type":"Progressing"}':
-              .: {}
-              'f:lastTransitionTime': {}
-              'f:lastUpdateTime': {}
-              'f:message': {}
-              'f:reason': {}
-              'f:status': {}
-              'f:type': {}
-          'f:observedGeneration': {}
-          'f:readyReplicas': {}
-          'f:replicas': {}
-          'f:updatedReplicas': {}
-      manager: kube-controller-manager
-      operation: Update
-      time: '2021-04-13T22:11:22Z'
-  name: auth-service
-  namespace: default
+    app: "auth-service"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: auth-service
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+      app: "auth-service"
   template:
     metadata:
-      annotations:
-        seccomp.security.alpha.kubernetes.io/pod: runtime/default
       labels:
-        app: auth-service
+        app: "auth-service"
     spec:
       containers:
-        - image: >-
-            gcr.io/develop-306822/github.com/true-north-creatives/ttt-auth-service
-          imagePullPolicy: IfNotPresent
-          name: ttt-auth-service-sha256-1
-          resources:
-            limits:
-              cpu: 500m
-              ephemeral-storage: 1Gi
-              memory: 2Gi
-            requests:
-              cpu: 500m
-              ephemeral-storage: 1Gi
-              memory: 2Gi
-          securityContext:
-            capabilities:
-              drop:
-                - NET_RAW
+      - name: "ttt-auth-service-sha256-1"
+        image: "gcr.io/develop-306822/github.com/true-north-creatives/ttt-auth-service@sha256:7c879579110a5672dd29819af407173066bc3dc5b1560bb09f54c7d0c9cf2c85"
+        ports:
+          containerPort: 3000
 ---
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
+apiVersion: "autoscaling/v2beta1"
+kind: "HorizontalPodAutoscaler"
 metadata:
+  name: "auth-service-hpa-gi7w"
+  namespace: "default"
   labels:
-    app: auth-service
-  managedFields:
-    - apiVersion: autoscaling/v2beta1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:labels':
-            .: {}
-            'f:app': {}
-        'f:spec':
-          'f:maxReplicas': {}
-          'f:metrics': {}
-          'f:minReplicas': {}
-          'f:scaleTargetRef':
-            'f:apiVersion': {}
-            'f:kind': {}
-            'f:name': {}
-      manager: GoogleCloudConsole
-      operation: Update
-      time: '2021-04-13T22:11:19Z'
-    - apiVersion: autoscaling/v1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            .: {}
-            'f:autoscaling.alpha.kubernetes.io/conditions': {}
-            'f:autoscaling.alpha.kubernetes.io/current-metrics': {}
-        'f:status':
-          'f:currentCPUUtilizationPercentage': {}
-          'f:currentReplicas': {}
-          'f:desiredReplicas': {}
-          'f:lastScaleTime': {}
-      manager: vpa-recommender
-      operation: Update
-      time: '2021-04-13T22:16:36Z'
-  name: auth-service-hpa-hr7m
-  namespace: default
+    app: "auth-service"
 spec:
-  maxReplicas: 5
-  metrics:
-    - resource:
-        name: cpu
-        targetAverageUtilization: 80
-      type: Resource
-  minReplicas: 1
   scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: auth-service
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    cloud.google.com/neg: '{"ingress":true}'
-    cloud.google.com/neg-status: >-
-      {"network_endpoint_groups":{"3000":"k8s1-2b69ee45-default-auth-service-service-3000-8acb9d98"},"zones":["asia-southeast1-b","asia-southeast1-c"]}
-  labels:
-    app: auth-service
-  managedFields:
-    - apiVersion: v1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:labels':
-            .: {}
-            'f:app': {}
-        'f:spec':
-          'f:ports':
-            .: {}
-            'k:{"port":3000,"protocol":"TCP"}':
-              .: {}
-              'f:port': {}
-              'f:protocol': {}
-              'f:targetPort': {}
-          'f:selector':
-            .: {}
-            'f:app': {}
-          'f:sessionAffinity': {}
-          'f:type': {}
-      manager: GoogleCloudConsole
-      operation: Update
-      time: '2021-04-13T22:22:56Z'
-    - apiVersion: v1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            'f:cloud.google.com/neg-status': {}
-      manager: glbc
-      operation: Update
-      time: '2021-04-13T22:28:09Z'
-  name: auth-service-service
-  namespace: default
-spec:
-  clusterIP: 10.100.3.241
-  ports:
-    - port: 3000
-      protocol: TCP
-      targetPort: 3000
-  selector:
-    app: auth-service
-  sessionAffinity: None
-  type: ClusterIP
+    kind: "Deployment"
+    name: "auth-service"
+    apiVersion: "apps/v1"
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: "Resource"
+    resource:
+      name: "cpu"
+      targetAverageUtilization: 80
